@@ -1,0 +1,685 @@
+<!-- ========================================== -->
+<!-- ԲԼՈԿ 4: HTML Head և CSS Styles             -->
+<!-- ========================================== -->
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<title>Քարտեզ և Ռութեր</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Այս մասը ավելացրու <head> մեջ՝ leaflet.js-ից հետո -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<style>
+    /* --- ԸՆԴՀԱՆՈՒՐ ՈՃԵՐ --- */
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; height: 100vh; overflow: hidden; color: #212121; background: #f9f9f9; }
+    .layout { display: flex; height: 100%; }
+
+    /* Sidebar */
+    .sidebar { width: 360px; display: flex; flex-direction: column; background: #fff; z-index: 1000; box-shadow: 4px 0 24px rgba(0,0,0,0.1); position: relative; }
+    
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid #eee; background: #fff; }
+    .tab-btn { flex: 1; padding: 14px; text-align: center; cursor: pointer; background: none; border: none; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 14px; }
+    .tab-btn:hover { background: #f9f9f9; color: #333; }
+    .tab-btn.active { color: #212121; border-bottom-color: #ffcc00; }
+
+    .header-area { padding: 16px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+    .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    h3 { margin: 0; font-size: 18px; font-weight: 700; }
+
+    .btn-big { padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; background: #ffcc00; color: #212121; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .btn-big:hover { background: #f5c200; transform: translateY(-1px); }
+
+    .search-box { position: relative; width: 100%; }
+    .search-input { width: 100%; box-sizing: border-box; border: none; background: #f3f3f3; padding: 10px 10px 10px 38px; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; }
+    .search-input:focus { background: #fff; box-shadow: 0 0 0 2px #fc0; }
+    .search-icon { position: absolute; left: 12px; top: 10px; width: 14px; height: 14px; border: 2px solid #999; border-radius: 50%; opacity: 0.7; }
+    .search-icon::after { content: ''; position: absolute; right: -4px; bottom: -4px; width: 6px; height: 2px; background: #999; transform: rotate(45deg); }
+
+    /* List Content */
+    .list-container { flex: 1; overflow-y: auto; padding: 10px; background: #fdfdfd; display: none; }
+    .list-container.active { display: block; }
+
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { 
+        padding: 10px 12px; margin-bottom: 8px; background: #fff; border: 1px solid #eee; border-radius: 10px;
+        cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: 0.15s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    li:hover { border-color: #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    li.active { border-color: #ffcc00; background: #fffce6; }
+
+    .info { flex: 1; min-width: 0; margin-right: 12px; }
+    .trunc { font-weight: 700; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333; }
+    .row-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .coords { font-size: 11px; color: #888; font-family: monospace; }
+    .type-badge { font-size: 10px; padding: 1px 6px; background: #eef2ff; color: #333; border: 1px solid #dce2f5; border-radius: 5px; font-weight: 600; }
+    
+    /* Buttons in List */
+    .btns { display: flex; gap: 6px; flex-shrink: 0; opacity: 0.6; transition: 0.2s; }
+    li:hover .btns, li.active .btns { opacity: 1; }
+    
+    .y-icon-btn { 
+        background: #f0f0f0; width: 28px; height: 28px; border-radius: 50%; 
+        display: flex; align-items: center; justify-content: center; 
+        border: none; cursor: pointer; font-size: 12px; 
+    }
+    .y-icon-btn:hover { background: #e0e0e0; }
+    .y-del { color: #d32f2f; font-weight: bold; }
+
+    /* Map */
+    #map { flex: 1; height: 100%; }
+    .bubble { border-radius: 50%; display: flex; justify-content: center; align-items: center; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-weight: 700; white-space: nowrap; overflow: hidden; transition: transform 0.2s; }
+    .marker-wrap:hover .bubble { transform: scale(1.1); }
+
+    /* Modals */
+    .modal { display: none; position: fixed; top: 60px; left: 380px; z-index: 2000; }
+    .modal-box { background: #fff; padding: 20px; border-radius: 12px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
+    .input-label { font-size: 12px; color: #666; margin-bottom: 4px; display: block; }
+    .input-group input, .input-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e0e0e0; background: #f9f9f9; box-sizing: border-box; font-size: 14px; outline: none; }
+    .input-group input:focus { border-color: #fc0; background: #fff; }
+    .input-error { border-color: #d32f2f !important; background: #fff5f5 !important; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    
+    .btn-text { background: transparent; color: #888; border: none; cursor: pointer; font-size: 13px; }
+    .btn-save { background: #ffcc00; color: #212121; border: none; cursor: pointer; font-weight: 600; padding: 8px 16px; border-radius: 8px; font-size: 13px; }
+    
+    /* Կարմիր կոճակ ջնջելու համար */
+    .btn-delete-confirm { background: #d32f2f; color: #fff; border: none; cursor: pointer; font-weight: 600; padding: 8px 16px; border-radius: 8px; font-size: 13px; }
+    .btn-delete-confirm:hover { background: #b71c1c; }
+
+    /* --- CHECKBOX LIST (90% / 10% Layout) --- */
+    .checkbox-list { 
+        max-height: 200px; 
+        overflow-y: auto; 
+        overflow-x: hidden; 
+        border: 1px solid #eee; 
+        border-radius: 8px; 
+        background: #fcfcfc; 
+        padding: 0;
+    }
+    
+    .checkbox-item { 
+        display: flex;       
+        align-items: center; 
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .checkbox-item:hover { background: #f9f9f9; }
+
+    /* Text 90% */
+    .check-info { 
+        flex-basis: 90%;
+        max-width: 90%;
+        padding-left: 12px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    
+    .check-info strong {
+        font-size: 13px;
+        color: #333;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis; 
+        display: block;
+    }
+    .check-type { font-size: 11px; color: #999; }
+
+    /* Checkbox 10% */
+    .checkbox-item input { 
+        flex-basis: 10%;
+        max-width: 10%;
+        transform: scale(1.3); 
+        cursor: pointer; 
+        margin: 0;
+        display: flex;
+        justify-content: center;
+    }
+</style>
+</head>
+
+<!-- ========================================== -->
+<!-- ԲԼՈԿ 5: HTML Body Structure & Modals       -->
+<!-- ========================================== -->
+<body>
+
+<div class="layout">
+    <aside class="sidebar">
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('points')">Վաճառակետեր</button>
+            <button class="tab-btn" onclick="switchTab('routes')">Երթուղիներ</button>
+        </div>
+
+        <!-- POINTS VIEW -->
+        <div id="view-points" class="view-section" style="display:flex; flex-direction:column; height:100%;">
+            <div class="header-area">
+                <div class="title-row">
+                    <h3>Ցանկ</h3>
+                    <button class="btn-big" onclick="openPointModal('add')">Ավելացնել +</button>
+                </div>
+                <div class="search-box">
+                    <div class="search-icon"></div>
+                    <input id="searchPoints" class="search-input" placeholder="Որոնում..." oninput="renderPoints()">
+                </div>
+            </div>
+            <div class="list-container active" id="list-points">
+                <ul id="ul-points"></ul>
+            </div>
+        </div>
+
+        <!-- ROUTES VIEW -->
+        <div id="view-routes" class="view-section" style="display:none; flex-direction:column; height:100%;">
+            <div class="header-area">
+                <div class="title-row">
+                    <h3>Ցանկ</h3>
+                    <button class="btn-big" onclick="openRouteModal('add')">Ստեղծել +</button>
+                </div>
+            </div>
+            <div class="list-container active" id="list-routes">
+                <ul id="ul-routes"></ul>
+            </div>
+        </div>
+    </aside>
+    <div id="map"></div>
+</div>
+
+<!-- POINT MODAL -->
+<div id="modalPoint" class="modal">
+    <div class="modal-box">
+        <h3 id="mpTitle">Նոր կետ</h3>
+        <div class="input-group">
+            <label class="input-label">Անվանում <span style="color:red">*</span></label>
+            <input id="mpName" placeholder="Օրինակ՝ Գրասենյակ">
+        </div>
+        <div class="input-group">
+            <label class="input-label">Տեսակ <span style="color:red">*</span></label>
+            <select id="mpType">
+                <option value="">Ընտրել...</option>
+                {% for t in point_types %}
+                <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="input-group" style="flex:1"><label class="input-label">Lat</label><input id="mpLat" type="number"></div>
+            <div class="input-group" style="flex:1"><label class="input-label">Lon</label><input id="mpLon" type="number"></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <div style="flex:1"><label class="input-label">Background</label><input type="color" id="mpBg" value="#2563eb" style="width:100%; height:30px; border:none; padding:0;"></div>
+            <div style="flex:1"><label class="input-label">Text Color</label><input type="color" id="mpFg" value="#ffffff" style="width:100%; height:30px; border:none; padding:0;"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-text" onclick="closeModal('modalPoint')">Չեղարկել</button>
+            <button class="btn-save" onclick="savePoint()">Պահպանել</button>
+        </div>
+    </div>
+</div>
+
+<!-- ROUTE MODAL -->
+<div id="modalRoute" class="modal">
+    <div class="modal-box">
+        <h3 id="mrTitle">Նոր երթուղի</h3>
+        <div class="input-group">
+            <label class="input-label">Երթուղու անունը <span style="color:red">*</span></label>
+            <input id="mrName" placeholder="Օրինակ՝ Առաքում 1">
+        </div>
+        <div class="input-group">
+            <label class="input-label">Գծի գույնը</label>
+            <input type="color" id="mrColor" value="#ff0000" style="width:100%; height:35px; border:none;">
+        </div>
+        <div class="input-group">
+            <label class="input-label">Ընտրեք վաճառակետերը (Սեղմեք քարտեզին):</label>
+            <div id="mrPointsList" class="checkbox-list">
+                <!-- JS will fill this -->
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-text" onclick="closeModal('modalRoute')">Չեղարկել</button>
+            <button class="btn-save" onclick="saveRoute()">Պահպանել</button>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL (ՆՈՐ) -->
+<div id="modalConfirm" class="modal">
+    <div class="modal-box" style="text-align: center;">
+        <h3 style="margin-bottom: 10px;">Ջնջե՞լ</h3>
+        <p id="confirmMsg" style="margin-bottom: 20px; color:#666; font-size:14px;">Վստա՞հ եք, որ ցանկանում եք ջնջել:</p>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-text" onclick="closeModal('modalConfirm')">Ոչ</button>
+            <button class="btn-delete-confirm" onclick="confirmDelete()">Այո, Ջնջել</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ԲԼՈԿ 6: JavaScript - Setup (Map & Tabs)
+    // ==========================================
+
+    // --- MAP SETUP ---
+    const map = L.map('map', { zoomControl: false }).setView([40.177, 44.503], 12);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
+        attribution: '© 2GIS'
+    }).addTo(map);
+
+    // --- DATA ---
+    let points = JSON.parse('{{ points | tojson | safe }}');
+    let routes = JSON.parse('{{ routes | tojson | safe }}');
+    
+    let markers = [];
+    let routeLayer = null; 
+    let tempMarker = null;
+    let editIdx = null; 
+    let editRouteIdx = null; 
+    let activeRouteIdx = null;
+
+    // Փոփոխական ջնջման համար
+    let pendingDelete = null; // { type: 'point'|'route', index: 0 }
+
+    const el = (id) => document.getElementById(id);
+    const api = async (url, data) => {
+        const fd = new FormData();
+        for(let k in data) fd.append(k, data[k]);
+        return (await fetch(url, {method:'POST', body:fd})).json();
+    };
+
+    // --- TABS ---
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+        
+        if (tab === 'points') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            el('view-points').style.display = 'flex';
+            activeRouteIdx = null; 
+            renderMap();
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            el('view-routes').style.display = 'flex';
+            renderRoutes();
+        }
+    }
+
+    // ==========================================
+    // ԲԼՈԿ 7: JavaScript - Render (Draw Lists & Map)
+    // ==========================================
+
+    // --- ICONS ---
+    function getIcon(p) {
+        const z = map.getZoom();
+        const s = z >= 15 ? 44 : (z >= 12 ? 34 : 20); 
+        const fs = Math.max(10, Math.round(s * 0.32));
+        const txt = (p.name || "?").slice(0, z < 14 ? 1 : 4);
+        return L.divIcon({
+            className: 'marker-wrap',
+            iconSize: [s, s], iconAnchor: [s/2, s/2],
+            html: `<div class="bubble" style="width:${s}px;height:${s}px;font-size:${fs}px;background:${p.bg};color:${p.fg}">${txt}</div>`
+        });
+    }
+    // --- RENDER POINTS LIST ---
+    function renderPoints() {
+        const ul = el('ul-points');
+        ul.innerHTML = '';
+        const search = el('searchPoints').value.toLowerCase().trim();
+
+        points.forEach((p, i) => {
+            if (search && !p.name.toLowerCase().includes(search)) return;
+
+            const li = document.createElement('li');
+            if(i === editIdx) li.classList.add('active');
+            
+            const typeHtml = p.type ? `<span class="type-badge">${p.type}</span>` : '';
+            li.innerHTML = `
+                <div class="info">
+                    <div class="trunc">${p.name}</div>
+                    <div class="row-bottom">
+                        <span class="coords">${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}</span>
+                        ${typeHtml}
+                    </div>
+                </div>
+                <div class="btns">
+                    <button class="y-icon-btn" onclick="event.stopPropagation(); editPoint(${i})">✎</button>
+                    <button class="y-icon-btn y-del" onclick="event.stopPropagation(); askDeletePoint(${i})">✕</button>
+                </div>`;
+            li.onclick = () => selectPoint(i);
+            ul.appendChild(li);
+        });
+        if(ul.innerHTML === '') ul.innerHTML = '<div style="color:#999;text-align:center;padding:10px">Ոչինչ չկա</div>';
+    }
+
+    // --- RENDER MAP (ԹԱՐՄԱՑՎԱԾ՝ ՃԱՆԱՊԱՐՀՆԵՐՈՎ) ---
+    function renderMap() {
+        // 1. Մաքրում ենք հին մարկերները
+        markers.forEach(m => m.remove());
+        markers = [];
+
+        // 2. Մաքրում ենք հին ճանապարհը (Routing Control)
+        if (routeLayer) {
+            map.removeControl(routeLayer);
+            routeLayer = null;
+        }
+
+        if (activeRouteIdx !== null) {
+            // --- ԵԹԵ ԸՆՏՐՎԱԾ Է ԵՐԹՈՒՂԻ ---
+            const r = routes[activeRouteIdx];
+            const waypoints = [];
+            
+            r.points.forEach(idx => {
+                if (points[idx]) {
+                    // Ավելացնում ենք քո մարկերները
+                    const m = L.marker([points[idx].lat, points[idx].lon], {icon: getIcon(points[idx])})
+                        .addTo(map).bindPopup(`<b>${points[idx].name}</b>`);
+                    
+                    m.on('click', () => handleMapClick(idx));
+                    markers.push(m);
+
+                    // Հավաքում ենք կոորդինատները ճանապարհի համար
+                    waypoints.push(L.latLng(points[idx].lat, points[idx].lon));
+                }
+            });
+
+            // Եթե ունենք առնվազն 2 կետ, գծում ենք ճանապարհը
+            if(waypoints.length > 1) {
+                routeLayer = L.Routing.control({
+                    waypoints: waypoints,
+                    lineOptions: {
+                        styles: [{color: r.color, opacity: 0.8, weight: 5}] // Քո ընտրած գույնը
+                    },
+                    createMarker: function() { return null; }, // Չդնել ստանդարտ մարկերներ
+                    addWaypoints: false,      // Արգելել նոր կետեր ավելացնել քաշելով
+                    draggableWaypoints: false, // Արգելել կետերը շարժել
+                    fitSelectedRoutes: true,  // Զում անել ճանապարհի վրա
+                    show: false               // Չցուցադրել տեքստային հրահանգները
+                }).addTo(map);
+            } else if (waypoints.length === 1) {
+                map.setView(waypoints[0], 14);
+            }
+
+        } else {
+            // --- ԵԹԵ ԵՐԹՈՒՂԻ ՉԿԱ (ՑՈՒՅՑ ՏԱԼ ԲՈԼՈՐԸ) ---
+            points.forEach((p, i) => {
+                const m = L.marker([p.lat, p.lon], {icon: getIcon(p)}).addTo(map).bindPopup(`<b>${p.name}</b><br>${p.type}`);
+                m.on('click', () => handleMapClick(i));
+                markers.push(m);
+            });
+        }
+    }
+
+    // --- MAP CLICK ---
+    function handleMapClick(i) {
+        const routeModal = el('modalRoute');
+        if (routeModal.style.display === 'block') {
+            const chk = document.querySelector(`.route-chk[value="${i}"]`);
+            if (chk) {
+                chk.checked = !chk.checked;
+                chk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else {
+            selectPoint(i);
+        }
+    }
+
+    // --- SELECT POINT (With Zoom Logic) ---
+    function selectPoint(i) {
+        editIdx = i;
+        renderPoints(); 
+        const p = points[i];
+        
+        // --- ՁԵՐ ԽՆԴՐԱԾ ZOOM-Ը ---
+        // Վերցնում ենք մաքսիմալ zoom-ը և հանում 2 (օրինակ՝ 19-2 = 17)
+        // setView-ն միշտ կենտրոնացնում է, նույնիսկ եթե կետը երևում է
+        const targetZoom = map.getMaxZoom() - 2;
+        map.setView([p.lat, p.lon], targetZoom);
+        
+        const maxZ = map.getMaxZoom() || 19;
+        map.flyTo([p.lat, p.lon], maxZ - 2, {animate: true, duration: 0.8});
+    }
+
+    // --- RENDER ROUTES LIST ---
+    function renderRoutes() {
+        const ul = el('ul-routes');
+        ul.innerHTML = '';
+        
+        routes.forEach((r, i) => {
+            const li = document.createElement('li');
+            if(i === activeRouteIdx) li.classList.add('active');
+
+            li.innerHTML = `
+                <div class="info">
+                    <div class="trunc" style="color:${r.color}">${r.name}</div>
+                    <span class="coords">${r.points.length} կետ</span>
+                </div>
+                <div class="btns">
+                    <button class="y-icon-btn" onclick="event.stopPropagation(); openRouteModal('edit', ${i})">✎</button>
+                    <button class="y-icon-btn y-del" onclick="event.stopPropagation(); askDeleteRoute(${i})">✕</button>
+                </div>`;
+            li.onclick = () => selectRoute(i);
+            ul.appendChild(li);
+        });
+        if(ul.innerHTML === '') ul.innerHTML = '<div style="color:#999;text-align:center;padding:10px">Երթուղիներ չկան</div>';
+    }
+
+    function selectRoute(i) {
+        if (activeRouteIdx === i) {
+            activeRouteIdx = null;
+        } else {
+            activeRouteIdx = i;
+        }
+        renderRoutes(); 
+        renderMap(); 
+        
+        if(activeRouteIdx !== null && routeLayer) {
+             map.fitBounds(routeLayer.getBounds(), {padding:[50,50]});
+        }
+    }
+
+    // ==========================================
+    // ԲԼՈԿ 8: JavaScript - Modals & Logic
+    // ==========================================
+
+    // --- MODALS ---
+    function openPointModal(mode) {
+        el('mpName').classList.remove('input-error');
+        el('mpType').classList.remove('input-error');
+        el('modalPoint').style.display = 'block';
+        
+        if (mode === 'add') {
+            editIdx = null;
+            el('mpTitle').innerText = 'Նոր կետ';
+            el('mpName').value = '';
+            el('mpLat').value = map.getCenter().lat.toFixed(6);
+            el('mpLon').value = map.getCenter().lng.toFixed(6);
+            el('mpType').value = '';
+        }
+        previewPoint();
+    }
+    
+    function editPoint(i) {
+        editIdx = i;
+        openPointModal('');
+        el('mpTitle').innerText = 'Խմբագրել';
+        const p = points[i];
+        el('mpName').value = p.name;
+        el('mpLat').value = p.lat.toFixed(6);
+        el('mpLon').value = p.lon.toFixed(6);
+        el('mpType').value = p.type;
+        el('mpBg').value = p.bg;
+        el('mpFg').value = p.fg;
+        
+        // Center map when editing too
+        const targetZoom = map.getMaxZoom() - 2;
+        map.setView([p.lat, p.lon], targetZoom);
+        
+        previewPoint();
+    }
+
+    function previewPoint() {
+        const p = {
+            name: el('mpName').value, lat: +el('mpLat').value, lon: +el('mpLon').value,
+            bg: el('mpBg').value, fg: el('mpFg').value
+        };
+        if(tempMarker) tempMarker.remove();
+        tempMarker = L.marker([p.lat, p.lon], {icon: getIcon(p)}).addTo(map);
+    }
+    ['mpName','mpLat','mpLon','mpBg','mpFg'].forEach(id=>el(id).oninput=previewPoint);
+
+    async function savePoint() {
+        if(!validatePoint()) return;
+        const data = {
+            name: el('mpName').value, lat: el('mpLat').value, lon: el('mpLon').value,
+            bg: el('mpBg').value, fg: el('mpFg').value, type: el('mpType').value
+        };
+        if(editIdx !== null) data.index = editIdx;
+        const res = await api('/save_point', data);
+        if(res.status === 'ok') {
+            if(editIdx !== null) points[editIdx] = res.point;
+            else points.push(res.point);
+            closeModal('modalPoint');
+            renderPoints();
+            if(activeRouteIdx === null) renderMap();
+        } else alert(res.msg);
+    }
+
+    function validatePoint() {
+        let valid = true;
+        ['mpName', 'mpType'].forEach(id => {
+            if(!el(id).value.trim()) { el(id).classList.add('input-error'); valid=false; }
+            else el(id).classList.remove('input-error');
+        });
+        return valid;
+    }
+
+    // --- NEW DELETE LOGIC (Modal) ---
+    function askDeletePoint(i) {
+        pendingDelete = { type: 'point', index: i };
+        el('confirmMsg').innerText = `Վստա՞հ եք, որ ցանկանում եք ջնջել "${points[i].name}"-ը:`;
+        el('modalConfirm').style.display = 'block';
+    }
+
+    function askDeleteRoute(i) {
+        pendingDelete = { type: 'route', index: i };
+        el('confirmMsg').innerText = `Վստա՞հ եք, որ ցանկանում եք ջնջել "${routes[i].name}"-ը:`;
+        el('modalConfirm').style.display = 'block';
+    }
+
+    async function confirmDelete() {
+        if (!pendingDelete) return;
+
+        if (pendingDelete.type === 'point') {
+            const i = pendingDelete.index;
+            if((await api('/delete_point', {index:i})).status==='ok'){
+                points.splice(i,1); 
+                renderPoints(); 
+                renderMap();
+            }
+        } else if (pendingDelete.type === 'route') {
+            const i = pendingDelete.index;
+            if((await api('/delete_route', {index:i})).status==='ok'){
+                routes.splice(i,1); 
+                if(activeRouteIdx===i) { activeRouteIdx=null; renderMap(); }
+                renderRoutes();
+            }
+        }
+        closeModal('modalConfirm');
+        pendingDelete = null;
+    }
+
+    // --- ROUTE MODAL ---
+    function openRouteModal(mode, idx=null) {
+        el('modalRoute').style.display = 'block';
+        el('mrName').classList.remove('input-error');
+        
+        const listDiv = el('mrPointsList');
+        listDiv.innerHTML = '';
+        
+        let selectedIndices = [];
+        if (mode === 'edit' && idx !== null) {
+            editRouteIdx = idx;
+            el('mrTitle').innerText = 'Խմբագրել ռութը';
+            el('mrName').value = routes[idx].name;
+            el('mrColor').value = routes[idx].color;
+            selectedIndices = routes[idx].points;
+        } else {
+            editRouteIdx = null;
+            el('mrTitle').innerText = 'Նոր ռութ';
+            el('mrName').value = '';
+            el('mrColor').value = '#ff0000';
+        }
+
+        if (points.length === 0) {
+            listDiv.innerHTML = '<div style="color:#999; font-size:12px; padding:10px;">Նախ ավելացրեք վաճառակետեր</div>';
+        } else {
+            points.forEach((p, i) => {
+                const checked = selectedIndices.includes(i) ? 'checked' : '';
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                
+                div.innerHTML = `
+                    <div class="check-info">
+                        <strong>${p.name}</strong>
+                        <span class="check-type">${p.type}</span>
+                    </div>
+                    <input type="checkbox" class="route-chk" value="${i}" ${checked}>
+                `;
+                div.onclick = (e) => {
+                    if(e.target.type !== 'checkbox') {
+                        const cb = div.querySelector('input');
+                        cb.checked = !cb.checked;
+                    }
+                }
+                listDiv.appendChild(div);
+            });
+        }
+    }
+
+    async function saveRoute() {
+        const nameInput = el('mrName');
+        if(!nameInput.value.trim()) { nameInput.classList.add('input-error'); return; }
+
+        const chks = document.querySelectorAll('.route-chk:checked');
+        const indices = Array.from(chks).map(c => c.value).join(',');
+
+        const data = {
+            name: nameInput.value,
+            color: el('mrColor').value,
+            indices: indices
+        };
+        if(editRouteIdx !== null) data.index = editRouteIdx;
+
+        const res = await api('/save_route', data);
+        if(res.status === 'ok') {
+            if(editRouteIdx !== null) routes[editRouteIdx] = res.route;
+            else routes.push(res.route);
+            closeModal('modalRoute');
+            renderRoutes();
+            if (activeRouteIdx === editRouteIdx) {
+                renderMap();
+                if(routeLayer) map.fitBounds(routeLayer.getBounds(), {padding:[50,50]});
+            }
+        } else alert(res.msg);
+    }
+
+    function closeModal(id) {
+        el(id).style.display = 'none';
+        if(tempMarker) { tempMarker.remove(); tempMarker = null; }
+        pendingDelete = null;
+    }
+
+    map.on('zoomend', () => { if(activeRouteIdx === null) renderMap(); else renderMap(); });
+    
+    // Init
+    renderPoints();
+    renderMap();
+
+</script>
+</body>
+</html>

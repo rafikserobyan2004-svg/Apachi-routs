@@ -1,0 +1,34 @@
+[
+  {
+    "name": "asdfsdfdsfsdfsfsfsf",
+    "lat": 40.191,
+    "lon": 44.510508,
+    "bg": "#5d79b6",
+    "fg": "#ffffff",
+    "type": "VIP-5"
+  },
+  {
+    "name": "4",
+    "lat": 40.195,
+    "lon": 44.512106,
+    "bg": "#ffcc00",
+    "fg": "#000000",
+    "type": "VIP-3"
+  },
+  {
+    "name": "ասդասդ",
+    "lat": 40.1,
+    "lon": 44.4,
+    "bg": "#ffcc00",
+    "fg": "#000000",
+    "type": "City"
+  },
+  {
+    "name": "սադ",
+    "lat": 40.190996,
+    "lon": 44.51508,
+    "bg": "#2563eb",
+    "fg": "#ffffff",
+    "type": "VIP-2"
+  }
+]
